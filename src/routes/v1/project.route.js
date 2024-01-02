@@ -5,11 +5,11 @@ const { projectController } = require('../../controllers');
 const auth = require('../../middlewares/auth');
 
 const router = express.Router();
+router.route('/').post(auth('getUsers'), projectController.createProject).get(auth('client'), projectController.getProjects);
 router
-  .route('/')
-  .post(auth('getUsers'), projectController.createProject)
-  .get(auth('client', 'getUsers'), projectController.getProjects);
-router.route('/:projectId').patch(auth('getUsers'), projectController.updateProject);
+  .route('/:projectId')
+  .patch(auth('getUsers'), projectController.updateProject)
+  .delete(auth('getUser'), projectController.deleteProject);
 router.route('/update-status/:projectId').patch(projectController.updateProject);
 
 module.exports = router;

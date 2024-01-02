@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { Project } = require('../models');
+const logger = require('../config/logger');
 
 const createProject = catchAsync(async (req, res) => {
   const user = { ...req.user };
@@ -56,10 +57,36 @@ const getProjects = catchAsync(async (req, res) => {
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
   }
 });
+// Delete projects
+const deleteProject = catchAsync(async (req, res) => {
+  const userRole = req.user._doc.role; // Assuming user role is available in the request object
+  // const userEmail = req.user._doc.email; // Assuming user email is available in the request object
+  const { projectId } = req.params;
+  try {
+    let project;
+
+    if (userRole === 'admin') {
+      project = await Project.findById(projectId);
+    } else if (userRole === 'client') {
+      project = await Project.findById(projectId);
+    }
+    if (project) {
+      await Project.findByIdAndDelete(projectId);
+      res.json({ message: 'DELETED' });
+    } else {
+      res.status(httpStatus.NOT_FOUND).json({ message: 'Project not found' });
+    }
+    // res.json(project);
+  } catch (error) {
+    logger.error(error);
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
+  }
+});
 
 module.exports = {
   createProject,
   updateProject,
   updateProjectStatus,
   getProjects,
+  deleteProject,
 };
