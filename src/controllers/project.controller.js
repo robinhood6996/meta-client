@@ -1,6 +1,6 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
-const { Project } = require('../models');
+const { Project, Account } = require('../models');
 const logger = require('../config/logger');
 
 const createProject = catchAsync(async (req, res) => {
@@ -27,6 +27,12 @@ const updateProject = catchAsync(async (req, res) => {
   if (!updatedProject) {
     return res.status(httpStatus.NOT_FOUND).json({ message: 'Project not found' });
   }
+  if (newData.spentAmount) {
+    const userEmail = updatedProject.user.email;
+    const userAccount = await Account.findOne({ 'user.email': `${userEmail}` });
+    userAccount.spentAmount += newData.spentAmount;
+    await userAccount.save();
+  }
   res.status(httpStatus.OK).send(updatedProject);
 });
 
@@ -35,7 +41,18 @@ const updateProjectStatus = catchAsync(async (req, res) => {
   const { projectId } = req.params;
   const { status } = req.body;
   const updatedProject = await Project.findByIdAndUpdate(projectId, status);
-
+  const userEmail = updatedProject.user.email;
+  const userAccount = await Account.findOne({ 'user.email': `${userEmail}` });
+  if (status === 'complete') {
+    userAccount.spentAmount += updatedProject.budget;
+    await userAccount.save();
+  }
+  if (status === 'reject' || status === 'pause') {
+    if (updatedProject.spentAmount) {
+      userAccount.spentAmount += updatedProject.spentAmount;
+    }
+    await userAccount.save();
+  }
   res.status(httpStatus.OK).send(updatedProject);
 });
 
@@ -45,14 +62,48 @@ const getProjects = catchAsync(async (req, res) => {
   const userEmail = req.user._doc.email; // Assuming user email is available in the request object
 
   try {
-    let projects;
+    let { limit, offset } = req.query;
+    const { search, startDate, endDate, currentMonth } = req.query;
+    limit = parseInt(limit, 10) || 20; // Default limit to 20 if not provided
+    offset = parseInt(offset, 10) || 0; // Default offset to 0 if not provided
+
+    let query = {};
 
     if (userRole === 'admin') {
-      projects = await Project.find();
+      // Admin can see all projects
     } else if (userRole === 'client') {
-      projects = await Project.find({ 'user.email': userEmail });
+      // Clients can only see their own projects
+      query = { 'user.email': userEmail };
     }
-    res.json(projects);
+
+    // Add search functionality
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } }, // Case-insensitive search on projectName
+        { link: { $regex: search, $options: 'i' } }, // Case-insensitive search on projectDescription
+      ];
+    }
+    // Add date range filter
+    // Add date range filter to createdAt and updatedAt
+    if (startDate && endDate) {
+      query.$or = [
+        { createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) } },
+        { updatedAt: { $gte: new Date(startDate), $lte: new Date(endDate) } },
+      ];
+    } else if (currentMonth) {
+      // Get the start and end dates for the current month
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+      query.$or = [
+        { createdAt: { $gte: startOfMonth.toISOString(), $lte: endOfMonth.toISOString() } },
+        { updatedAt: { $gte: startOfMonth.toISOString(), $lte: endOfMonth.toISOString() } },
+      ];
+    }
+
+    const projects = await Project.find(query).limit(limit).skip(offset);
+    res.status(httpStatus.OK).json(projects);
   } catch (error) {
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
   }

@@ -10,6 +10,6 @@ router
   .route('/:projectId')
   .patch(auth('getUsers'), projectController.updateProject)
   .delete(auth('getUser'), projectController.deleteProject);
-router.route('/update-status/:projectId').patch(projectController.updateProject);
+router.route('/update-status/:projectId').patch(projectController.updateProjectStatus);
 
 module.exports = router;
