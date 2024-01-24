@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
-const { Payment } = require('../models');
+const { Payment, Account } = require('../models');
+const logger = require('../config/logger');
 
 const createPayment = catchAsync(async (req, res) => {
   const user = { ...req.user };
@@ -83,7 +84,65 @@ const getPayments = catchAsync(async (req, res) => {
   }
 });
 
+// Update payment status by Admin.
+const updatePaymentStatus = catchAsync(async (req, res) => {
+  const { paymentId } = req.params;
+  const { status } = req.body;
+  const payment = await Payment.findByIdAndUpdate(paymentId, status);
+  const userEmail = payment.user.email;
+  const userAccount = await Account.findOne({ 'user.email': `${userEmail}` });
+  if (status === 'verified') {
+    userAccount.paid += payment.amount;
+    await userAccount.save();
+  }
+
+  res.status(httpStatus.OK).send(payment);
+});
+
+// Update payment if mistakenly any wrong inpu
+const updatePayment = catchAsync(async (req, res) => {
+  const { paymentId } = req.params;
+  const newData = { ...req.body };
+  const updatedProject = await Payment.findByIdAndUpdate(paymentId, newData, { new: true });
+  if (!updatedProject) {
+    return res.status(httpStatus.NOT_FOUND).json({ message: 'Payment reference not found' });
+  }
+  res.status(httpStatus.OK).send(updatedProject);
+});
+
+// Delete projects
+const deletePayment = catchAsync(async (req, res) => {
+  const userRole = req.user._doc.role; // Assuming user role is available in the request object
+  // const userEmail = req.user._doc.email; // Assuming user email is available in the request object
+  const { paymentId } = req.params;
+  try {
+    let payment;
+
+    if (userRole === 'admin') {
+      payment = await Payment.findById(paymentId);
+    } else if (userRole === 'client') {
+      payment = await userRole.findById(paymentId);
+      if (payment.status !== 'pending') {
+        return res.status(httpStatus['403_MESSAGE']).json({ message: 'Payment reference not found' });
+      }
+    }
+    if (payment) {
+      await Payment.findByIdAndDelete(paymentId);
+      res.json({ message: 'DELETED' });
+    } else {
+      res.status(httpStatus.NOT_FOUND).json({ message: 'Payment reference not found' });
+    }
+    // res.json(project);
+  } catch (error) {
+    logger.error(error);
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
+  }
+});
+
 module.exports = {
   createPayment,
   getPayments,
+  updatePaymentStatus,
+  updatePayment,
+  deletePayment,
 };

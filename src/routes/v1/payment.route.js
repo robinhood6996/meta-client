@@ -8,8 +8,8 @@ const router = express.Router();
 router.route('/').post(auth('getUsers'), paymentController.createPayment).get(auth('client'), paymentController.getPayments);
 router
   .route('/:projectId')
-  .patch(auth('getUsers'), projectController.updateProject)
+  .patch(auth('getUsers'), paymentController.updatePayment)
   .delete(auth('getUser'), projectController.deleteProject);
-router.route('/update-status/:projectId').patch(projectController.updateProjectStatus);
+router.route('/update-status/:paymentId').patch(paymentController.updatePaymentStatus);
 
 module.exports = router;

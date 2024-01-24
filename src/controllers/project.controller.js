@@ -10,6 +10,7 @@ const createProject = catchAsync(async (req, res) => {
   }
   const project = {
     ...req.body,
+    status: 'pending',
     user: {
       id: user._doc._id,
       name: user._doc.name,
@@ -63,7 +64,7 @@ const getProjects = catchAsync(async (req, res) => {
 
   try {
     let { limit, offset } = req.query;
-    const { search, startDate, endDate, currentMonth } = req.query;
+    const { search, startDate, endDate, currentMonth, status } = req.query;
     limit = parseInt(limit, 10) || 20; // Default limit to 20 if not provided
     offset = parseInt(offset, 10) || 0; // Default offset to 0 if not provided
 
@@ -82,6 +83,9 @@ const getProjects = catchAsync(async (req, res) => {
         { title: { $regex: search, $options: 'i' } }, // Case-insensitive search on projectName
         { link: { $regex: search, $options: 'i' } }, // Case-insensitive search on projectDescription
       ];
+    }
+    if (status) {
+      query.status = status;
     }
     // Add date range filter
     // Add date range filter to createdAt and updatedAt
