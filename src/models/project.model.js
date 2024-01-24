@@ -41,7 +41,7 @@ const projectSchema = mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'active', 'pause', 'complete', 'reject'],
+      enum: ['pending', 'active', 'pause', 'complete', 'reject', 'not-delivered'],
       required: true,
     },
     user: {
