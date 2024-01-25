@@ -27,6 +27,10 @@ const projectSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    description: {
+      type: String,
+      required: false,
+    },
     duration: {
       type: Number,
       required: true,

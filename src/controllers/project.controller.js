@@ -105,9 +105,10 @@ const getProjects = catchAsync(async (req, res) => {
         { updatedAt: { $gte: startOfMonth.toISOString(), $lte: endOfMonth.toISOString() } },
       ];
     }
-
-    const projects = await Project.find(query).limit(limit).skip(offset);
-    res.status(httpStatus.OK).json(projects);
+    // Get the total count of matching documents
+    const totalCount = await Project.countDocuments(query);
+    const projects = await Project.find(query).sort({ createdAt: -1 }).limit(limit).skip(offset);
+    res.status(httpStatus.OK).json({ meta: { totalCount, resultCount: projects.length }, projects });
   } catch (error) {
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
   }
