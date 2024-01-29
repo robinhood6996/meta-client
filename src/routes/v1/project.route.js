@@ -3,7 +3,8 @@ const express = require('express');
 // const authValidation = require('../../validations/auth.validation');
 const { projectController } = require('../../controllers');
 const auth = require('../../middlewares/auth');
-
+// util single file upload API
+// app.post("/upload", upload.single('file'), (req, res) => res.send({ imageURL: req.file.path }));
 const router = express.Router();
 router.route('/').post(auth('getUsers'), projectController.createProject).get(auth('client'), projectController.getProjects);
 router

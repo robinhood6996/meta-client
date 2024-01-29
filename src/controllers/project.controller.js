@@ -8,6 +8,7 @@ const createProject = catchAsync(async (req, res) => {
   if (!user) {
     res.status(httpStatus.CREATED).send('error');
   }
+
   const project = {
     ...req.body,
     status: 'pending',

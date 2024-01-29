@@ -9,11 +9,13 @@ const createPayment = catchAsync(async (req, res) => {
   if (!user) {
     res.status(httpStatus.CREATED).send('error');
   }
+  const file = req.file.path;
   const payment = {
     title,
     paymentMedia,
     paymentRef,
     amount,
+    paymentProve: file,
     status: 'pending',
     user: {
       id: user._doc._id,

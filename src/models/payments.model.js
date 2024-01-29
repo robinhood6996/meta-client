@@ -55,6 +55,11 @@ const paymentSchema = mongoose.Schema(
   }
 );
 
+// M7q0_tyGPQvaG3MZLLc_C5br4as - Cloudinary API Secret
+// 882374222524436 -Cloudinary API Key
+// meta-client - Bucket name;
+// dh9up6qrj - Cloud name;
+
 const Project = mongoose.model('Payment', paymentSchema);
 
 module.exports = Project;
