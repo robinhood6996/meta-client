@@ -78,9 +78,10 @@ const getPayments = catchAsync(async (req, res) => {
     if (status) {
       query.status = status;
     }
-
-    const projects = await Payment.find(query).limit(limit).skip(offset);
-    res.status(httpStatus.OK).json(projects);
+    // Get the total count of matching documents
+    const totalCount = await Payment.countDocuments(query);
+    const payments = await Payment.find(query).sort({ createdAt: -1 }).limit(limit).skip(offset);
+    res.status(httpStatus.OK).json({ meta: { totalCount, resultCount: payments.length }, payments });
   } catch (error) {
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
   }

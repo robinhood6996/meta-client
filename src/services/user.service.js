@@ -72,6 +72,9 @@ const updateUserById = async (userId, updateBody) => {
  */
 const deleteUserById = async (userId) => {
   const user = await getUserById(userId);
+  if (user.role !== 'admin') {
+    throw new ApiError(httpStatus.FORBIDDEN, 'User not found');
+  }
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }

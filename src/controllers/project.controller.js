@@ -114,6 +114,37 @@ const getProjects = catchAsync(async (req, res) => {
     res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Internal Server Error' });
   }
 });
+
+// Get projects
+const getProjectsStats = catchAsync(async (req, res) => {
+  const userRole = req.user._doc.role; // Assuming user role is available in the request object
+  const userEmail = req.user._doc.email; // Assuming user email is available in the request object
+  let query = {};
+  if (userRole === 'admin') {
+    // Admin can see all projects
+  } else if (userRole === 'client') {
+    // Clients can only see their own projects
+    query = { 'user.email': userEmail };
+  }
+  // Get the start and end dates for the current month for project
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  query.$or = [
+    { createdAt: { $gte: startOfMonth.toISOString(), $lte: endOfMonth.toISOString() } },
+    { updatedAt: { $gte: startOfMonth.toISOString(), $lte: endOfMonth.toISOString() } },
+  ];
+  const active = await Project.countDocuments({ ...query, status: 'active' });
+  const pending = await Project.countDocuments({ ...query, status: 'pending' });
+  const pause = await Project.countDocuments({ ...query, status: 'pause' });
+  const complete = await Project.countDocuments({ ...query, status: 'complete' });
+  const reject = await Project.countDocuments({ ...query, status: 'reject' });
+  const notDelivered = await Project.countDocuments({ ...query, status: 'not-delivered' });
+  // End for project
+
+  res.status(httpStatus.OK).json({ projects: { active, pending, reject, notDelivered, pause, complete } });
+});
 // Delete projects
 const deleteProject = catchAsync(async (req, res) => {
   const userRole = req.user._doc.role; // Assuming user role is available in the request object
@@ -146,4 +177,5 @@ module.exports = {
   updateProjectStatus,
   getProjects,
   deleteProject,
+  getProjectsStats,
 };

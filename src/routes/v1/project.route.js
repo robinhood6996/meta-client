@@ -11,6 +11,7 @@ router
   .route('/:projectId')
   .patch(auth('getUsers'), projectController.updateProject)
   .delete(auth('getUser'), projectController.deleteProject);
-router.route('/update-status/:projectId').patch(projectController.updateProjectStatus);
+router.route('/update-status/:projectId').patch(auth('getUsers'), projectController.updateProjectStatus);
+router.route('/get-stats').get(auth('getUsers'), projectController.getProjectsStats);
 
 module.exports = router;
